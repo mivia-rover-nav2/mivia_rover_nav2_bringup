@@ -114,7 +114,7 @@ controller_server:
     use_sim_time: True
     controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.5
+    min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
     odom_topic: "/odometry/filtered"
@@ -163,7 +163,7 @@ controller_server:
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 20
-      sim_time: 1.7
+      sim_time: 3.0
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
@@ -171,17 +171,19 @@ controller_server:
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      BaseObstacle.scale: 0.02
-      PathAlign.scale: 32.0
-      PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
-      PathDist.scale: 32.0
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "ObstacleFootprint"]
+      BaseObstacle.scale: 3.0
+      PathAlign.scale: 16.0
+      PathAlign.forward_point_distance: 0.4
+      GoalAlign.scale: 10.0
+      GoalAlign.forward_point_distance: 0.4
+      PathDist.scale: 16.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
       RotateToGoal.slowing_factor: 5.0
       RotateToGoal.lookahead_time: -1.0
+      ObstacleFootprint.scale: 5.0
+
 
 local_costmap:
   local_costmap:
@@ -201,8 +203,8 @@ local_costmap:
 
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 10.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 8.0
+        inflation_radius: 0.15
         # cost_scaling_factor: 3.0       # (commented) valore precedente nel contesto iniziale
         # inflation_radius: 0.55         # (commented) invariato, mantenuto qui solo come traccia
 
@@ -219,6 +221,8 @@ local_costmap:
           max_obstacle_height: 1.5
           obstacle_max_range: 10.0
           raytrace_max_range: 10.0
+          raytrace_min_range: 0.0
+          obstacle_min_range: 0.0
           inf_is_valid: false
 
       # -----------------------------------------------------------------------
