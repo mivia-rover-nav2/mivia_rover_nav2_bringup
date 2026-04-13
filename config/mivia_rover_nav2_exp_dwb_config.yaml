@@ -126,7 +126,7 @@ controller_server:
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.15
-      movement_time_allowance: 20.0
+      movement_time_allowance: 60.0
 
     # Goal checker parameters
     #precise_goal_checker:
@@ -145,17 +145,17 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.6 #0.26
+      max_vel_x: 0.6 #PAPER-PARAMS
       max_vel_y: 0.0
       max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.6 #0.26
+      max_speed_xy: 0.6 #PAPER-PARAMS
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 2.5
+      acc_lim_x: 2.5 #PAPER-PARAMS
       acc_lim_y: 0.0
-      acc_lim_theta: 3.2
+      acc_lim_theta: 3.2 #PAPER-PARAMS
       decel_lim_x: -2.5
       decel_lim_y: 0.0
       decel_lim_theta: -3.2
@@ -370,7 +370,7 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [1.2, 0.0, 1.0]
+    max_velocity: [1.2, 0.0, 1.0] #PAPER-PARAMS
     min_velocity: [-1.2, 0.0, -1.0]
     max_accel: [2.5, 0.0, 3.2]
     max_decel: [-2.5, 0.0, -3.2]
