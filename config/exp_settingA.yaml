@@ -145,11 +145,11 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.6 #PAPER-PARAMS
+      max_vel_x: 1.5 #PAPER-PARAMS
       max_vel_y: 0.0
       max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.6 #PAPER-PARAMS
+      max_speed_xy: 1.5 #PAPER-PARAMS
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
@@ -172,7 +172,7 @@ controller_server:
       stateful: True
       critics: ["Oscillation", "BaseObstacle", "PathAlign", "PathDist", "GoalDist", "ObstacleFootprint"]
       BaseObstacle.scale: 2.0
-      PathAlign.scale: 48.0
+      PathAlign.scale: 90.0
       PathAlign.forward_point_distance: 0.05
       PathDist.scale: 384.0
       GoalDist.scale: 0.5
@@ -207,7 +207,7 @@ local_costmap:
         enabled: True
         observation_sources: patchworkpp_nonground
         patchworkpp_nonground:
-          topic: /patchworkpp/nonground # /perception/detected_objects/pointcloud
+          topic: /patchworkpp/nongrounD # /perception/detected_objects/pointcloud
           data_type: "PointCloud2"
           marking: true
           clearing: true
@@ -378,3 +378,4 @@ velocity_smoother:
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
+
