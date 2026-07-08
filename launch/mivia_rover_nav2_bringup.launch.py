@@ -26,7 +26,7 @@ def generate_launch_description() -> LaunchDescription:
     default_params_file = os.path.join(
         this_share,
         "config",
-        "mivia_rover_nav2_bringup.launch.py",
+        "mivia_rover_nav2_config.yaml",
     )
 
     # ------------------------------------------------------------------
