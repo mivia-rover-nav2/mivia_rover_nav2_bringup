@@ -1,0 +1,62 @@
+# Report — Progettazione delle configurazioni RPP per la campagna su paved (v_max = 1.0 m/s)
+
+**Contesto.** Campagna sperimentale sul path-following con Regulated Pure Pursuit (RPP) su MiviaRover, traiettorie circular (r = 1.0 m) e stadium (lunghezza 4 m, raggi di raccordo 0.5 m). L'asse sperimentale è costituito dai limiti cinematici del controller — velocità angolare e accelerazioni lineari e angolari — a velocità lineare massima fissata a 1.0 m/s. I tre file generati (`exp_rpp_setting_spinta.yaml`, `exp_rpp_setting_intermedia.yaml`, `exp_rpp_setting_minima.yaml`) derivano dal file di riferimento della campagna DWB (`exp_settingA.yaml`) e ne differiscono esclusivamente nelle sezioni `controller_server` (plugin FollowPath) e `velocity_smoother`; tutto il resto — AMCL, behavior tree, costmap, planner, behavior server — è identico byte per byte al riferimento, così che ogni differenza misurata sia attribuibile ai soli parametri sotto esame.
+
+## 1. Sostituzione del controller: da DWB a RPP in modalità Dynamic Window
+
+Il plugin `dwb_core::DWBLocalPlanner` è stato sostituito con `nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController` con `use_dynamic_window: true`. La scelta è strutturale: in RPP puro (`use_dynamic_window: false`) i parametri `min_linear_vel`, `max_angular_vel`, `min_angular_vel`, `max_linear_accel`, `max_linear_decel` e `max_angular_decel` non vengono applicati — il controller calcola il comando in modo puramente geometrico (ω = v·κ) e i limiti cinematici resterebbero lettera morta. Poiché questi parametri costituiscono l'asse sperimentale, la modalità Dynamic Window Pure Pursuit (DWPP) è un requisito, non un'opzione: garantisce che ogni comando emesso sia già cinematicamente ammissibile rispetto ai limiti dichiarati.
+
+**Avvertenza di compatibilità.** Il file di riferimento usa `progress_checker_plugin` al singolare, sintassi tipica di ROS2 Humble e precedenti. I parametri `max_linear_vel` (già `desired_linear_vel`) e soprattutto `use_dynamic_window` esistono solo nelle release recenti di Nav2. Prima della campagna va eseguito `ros2 param list /controller_server` sul rover: se `use_dynamic_window` non compare, la distro in uso non supporta DWPP e il disegno va riportato sulla variante "limiti nel velocity smoother" (tre smoother diversi, controller identico). Un parametro non riconosciuto da Nav2 non produce errori: viene silenziosamente ignorato e resta attivo il default, quindi la verifica preventiva è indispensabile.
+
+## 2. Scelta di v_max = 1.0 m/s: dimensionamento al tetto nominale
+
+La velocità di ruota massima misurata a vuoto è 1.24 m/s; la carreggiata è b = 0.43 m (b/2 = 0.215 m). Per un differential-drive che percorre a regime una curva di raggio R, la ruota esterna richiede v_ruota = v·(1 + b/2R). Il caso dimensionante è il cerchio (R = 1.0, fattore 1.215), poiché agli angoli dello stadium (fattore 1.43) la curvature regulation abbassa comunque la velocità comandata a v·(0.5/0.9) ≈ 0.56·v_max, riportando la domanda di ruota a livelli bassi.
+
+Con v_max = 1.0 m/s, la domanda nominale sul cerchio è 1.0·1.215 = 1.215 m/s, pari al 98% del tetto a vuoto di 1.24 m/s. La scelta è quindi un dimensionamento al limite fisico nominale: per decisione di progetto non vengono scontati i tre fattori prudenziali considerati in una prima analisi (riserva di attuazione per le correzioni, calo di velocità sotto carico, sag della batteria durante la campagna). La conseguenza operativa va dichiarata perché diventa parte del protocollo expected–measured: sul cerchio a regime il sistema opera senza riserva di ruota esterna, per cui qualunque correzione di traiettoria che richieda ω superiore al nominale, o qualunque riduzione del tetto reale rispetto a quello a vuoto, produce saturazione della ruota esterna, il cui effetto atteso è una deriva sistematica verso l'esterno del cerchio (curvatura eseguita inferiore alla comandata). Questa firma, se osservata, non è un errore del controller ma la manifestazione misurabile del funzionamento al tetto — e il confronto tra comando e velocità di ruota eseguita (telemetria encoder) permette di riconoscerla e attribuirla correttamente.
+
+## 3. Dimensionamento di ω_max per il setting Spinta: perché si calcola sull'angolo dello stadium
+
+Il vincolo fisico non è su ω da solo ma sulla coppia (v, ω), attraverso l'accoppiamento differenziale:
+
+    v + ω·(b/2) ≤ v_ruota,max  →  ω_disponibile(v) = (1.24 − v)/0.215
+
+La velocità angolare fisicamente disponibile dipende quindi dalla velocità lineare corrente, e i due estremi del profilo di missione danno budget radicalmente diversi. A velocità di crociera (v = 1.0, rettilinei dello stadium e cerchio) il budget è ω ≤ (1.24 − 1.0)/0.215 ≈ 1.12 rad/s. All'angolo dello stadium, dove la curvature regulation ha ridotto la velocità a 0.556 m/s, il budget sale a ω ≤ (1.24 − 0.556)/0.215 ≈ 3.18 rad/s.
+
+Il parametro `max_angular_vel` è però un limite unico e globale: quale dei due scenari deve dimensionarlo? La risposta viene dalla struttura stessa del pure pursuit, in cui ω comandata = v·κ: la domanda di ω è alta esattamente dove la curvatura è alta, cioè dove la regulation ha già abbassato v liberando budget di ruota. All'angolo (κ = 2 rad/m) la domanda nominale è ω = 0.556·2 ≈ 1.11 rad/s a fronte di 3.18 disponibili; sul rettilineo la curvatura è nulla e ω serve solo per correzioni, che a curvatura nulla sono piccole. I due regimi sono quindi complementari per costruzione: alta v con bassa domanda di ω, alta domanda di ω con bassa v.
+
+Dimensionare ω_max sullo scenario di crociera (1.12 rad/s) sarebbe un errore: il limite globale scenderebbe appena sopra la domanda nominale dell'angolo (1.11 rad/s), azzerando l'autorità di correzione proprio nel tratto a curvatura stretta dove serve — il controller non potrebbe comandare archi più stretti del path per recuperare gli errori, e l'inseguimento agli angoli degraderebbe per un limite software, non fisico. Il dimensionamento corretto è sullo scenario in cui ω elevata è effettivamente richiesta e fisicamente erogabile: l'angolo dello stadium, il tratto a raggio di curvatura già corto. Da qui ω_max = 3.0 rad/s per il setting Spinta, il valore intero più vicino sotto il tetto esatto di 3.18: agli angoli garantisce un rapporto ~2.7× tra limite e domanda nominale, cioè piena autorità di correzione.
+
+Il rovescio della medaglia è che il limite di 3.0 rad/s non è onorabile dalla fisica a piena velocità: se durante un transitorio a v = 1.0 il controller comandasse ω prossima al limite, la ruota esterna dovrebbe erogare 1.0 + 3.0·0.215 ≈ 1.65 m/s e saturerebbe. È un compromesso accettato e dichiarato: quel regime (alta v, alta ω simultanee) non appartiene al profilo nominale delle due traiettorie e può presentarsi solo in correzioni estreme; la telemetria comando/eseguito per ruota permette di individuare e conteggiare gli eventuali episodi di saturazione, che diventano essi stessi un dato della campagna anziché un artefatto nascosto.
+
+## 4. Vincoli di compatibilità: i floor del setting Minima (ricalcolati per v_max = 1.0)
+
+Il requisito è che ogni setting consenta di raggiungere v_max su entrambe le traiettorie. Sul cerchio il vincolo è banale; è lo stadium a dettare i floor, e l'innalzamento di v_max li innalza tutti — un effetto da tenere presente perché comprime lo spazio esplorabile.
+
+**Accelerazione lineare.** Con lunghezza totale 4 m e raccordi r = 0.5, i semicerchi occupano π ≈ 3.14 m e restano ~0.43 m per ciascun rettilineo. Lì il robot deve accelerare da 0.556 a 1.0 m/s e ridecelerare a 0.556 prima del raccordo successivo: (v_max² − v_curva²)/a ≤ 0.43 dà a ≥ (1.0 − 0.309)/0.43 ≈ **1.61 m/s²**. Si noti il salto rispetto al caso v_max = 0.8 (floor 1.04): a parità di rettilineo, il floor cresce quadraticamente con la velocità da raggiungere. Al floor esatto il profilo è triangolare e v_max viene toccata per un solo istante.
+
+**Velocità angolare.** La domanda nominale peggiore è all'angolo: ω = 0.556/0.5 ≈ 1.11 rad/s. Questo è il floor stretto di compatibilità; il setting Minima è posto a 1.4 rad/s (+25%) per non azzerare del tutto l'autorità di correzione agli angoli, che al floor esatto renderebbe il tracking marginale per costruzione.
+
+**Accelerazione angolare.** La transizione rettilineo→semicerchio richiede di costruire ω ≈ 1.11 rad/s entro il preavviso dato dal lookahead (~L/v = 0.6/1.0 = 0.6 s a crociera): α ≥ 1.11/0.6 ≈ **1.85 rad/s²**.
+
+**Conseguenza sullo span sperimentale.** Con il floor lineare a 1.61 e il tetto della Spinta a 2.5 (valore ereditato dalla campagna DWB), lo span esplorabile sull'asse dell'accelerazione lineare si riduce a ~1.5×, contro il ~2× disponibile a v_max = 0.8. È il prezzo intrinseco della velocità più alta sui rettilinei corti dello stadium: se in campo le tre configurazioni risultassero indistinguibili su quest'asse, la spiegazione più probabile è la compressione dello span, non l'assenza dell'effetto — sull'asse angolare, dove lo span resta >2×, la risoluzione è invece piena.
+
+## 5. I tre setting
+
+| Parametro | Spinta | Intermedia | Minima | Floor calcolato |
+|---|---|---|---|---|
+| `max_linear_vel` | 1.0 | 1.0 | 1.0 | — (fissa) |
+| `max_angular_vel` / `min` | ±3.0 | ±2.0 | ±1.4 | 1.11 rad/s (nominale angolo) |
+| `max_linear_accel` / `decel` | ±2.5 | ±2.0 | ±1.7 | 1.61 m/s² |
+| `max_angular_accel` / `decel` | ±3.2 | ±2.5 | ±2.0 | 1.85 rad/s² |
+| `rotate_to_heading_angular_vel` | 1.8 | 1.4 | 1.0 | ≤ ω_max del setting |
+
+La **Spinta** rappresenta il massimo fisicamente motivato: ω_max = 3.0 dal tetto di ruota all'angolo (§3), accelerazioni ai valori della campagna DWB (2.5 / 3.2). La **Minima** siede sui floor con margine del 5–25% a seconda dell'asse: garantisce per costruzione il raggiungimento di v_max ma senza riserva, ed è il setting candidato a esporre per primo i limiti della parametrizzazione. L'**Intermedia** è approssimativamente il punto medio geometrico su ciascun asse. Il valore `min_linear_vel: 0.0` (anziché il −0.5 dell'esempio ufficiale) è coerente con `allow_reversing: false`: le traiettorie non contengono cuspidi e comandi negativi non devono comparire. La rotazione in place (`rotate_to_heading`) avviene a v ≈ 0, dove la domanda di ruota è solo ω·b/2 (0.39 m/s a 1.8 rad/s): nessun vincolo di accoppiamento, i tre valori scalano con ω_max per coerenza interna del setting.
+
+## 6. Velocity smoother: da vincolo attivo a vincolo dormiente
+
+Nel file di riferimento lo smoother imponeva `max_velocity: [1.2, 0.0, 1.0]` e accelerazioni 2.5/3.2, limiti pensati per la campagna DWB in cui era parte della catena di enforcement. In questa campagna i limiti cinematici vivono nel controller (DWPP) e lo smoother non deve mai essere il vincolo attivo, pena la sovrascrittura silenziosa dell'asse sperimentale: in particolare il vecchio limite angolare di 1.0 rad/s sarebbe risultato inferiore perfino alla domanda nominale agli angoli (1.11 rad/s) e avrebbe tagliato le richieste di tutti e tre i setting, rendendoli indistinguibili. I nuovi valori — velocità [1.1, 0.0, 3.3], accelerazioni [3.0, 0.0, 4.0] — sono deliberatamente superiori al setting più aggressivo (1.0 m/s, 3.0 rad/s, 2.5 m/s², 3.2 rad/s²) e identici nei tre file: lo smoother resta in catena come rete di sicurezza e per il ramp-down su timeout, ma non modella più il comando.
+
+## 7. Parametri congelati e infrastruttura invariata
+
+Tutti i parametri RPP non appartenenti all'asse sperimentale sono fissati ai valori dell'esempio ufficiale e identici nei tre file: lookahead fisso a 0.6 m (scalatura in velocità disattivata), curvature regulation attiva con `min_radius: 0.9` — che per la geometria dei path non scatta mai sul cerchio (r = 1.0 > 0.9) e scatta sempre agli angoli dello stadium (r = 0.5) — collision detection attiva, rotate-to-heading attivo con soglia a 45°, cost-regulated scaling disattivato (arena obstacle-free; si noti che il default upstream è attivo, la disattivazione va dichiarata). Progress checker (0.15 m / 60 s) e goal checker (`PositionGoalChecker`, tolleranza 0.25 m) sono ereditati invariati dal file della campagna DWB anziché dallo stub della documentazione (0.5 m / 10 s): i valori già validati in campo riducono il rischio di recovery spurie e mantengono identica la condizione di terminazione della missione. Nota ereditata dal riferimento: `use_sim_time: True` compare in tutte le sezioni; se non viene sovrascritto dal launch file, va portato a `False` prima delle run in campo.
+

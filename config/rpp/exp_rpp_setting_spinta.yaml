@@ -122,62 +122,55 @@ controller_server:
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
     controller_plugins: ["FollowPath"]
 
-    # Progress checker parameters
+    # Progress checker parameters (unchanged w.r.t. DWB campaign)
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
       required_movement_radius: 0.15
       movement_time_allowance: 60.0
 
-    # Goal checker parameters
-    #precise_goal_checker:
-    #  plugin: "nav2_controller::SimpleGoalChecker"
-    #  xy_goal_tolerance: 0.25
-    #  yaw_goal_tolerance: 0.25
-    #  stateful: True
+    # Goal checker parameters (unchanged w.r.t. DWB campaign)
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::PositionGoalChecker"
       xy_goal_tolerance: 0.25
 
-    # DWB parameters
+    # RPP parameters - Setting SPINTA (aggressive) #PAPER-PARAMS
     FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
-      debug_trajectory_details: True
-      min_vel_x: 0.0
-      min_vel_y: 0.0
-      max_vel_x: 1.5 #PAPER-PARAMS
-      max_vel_y: 0.0
-      max_vel_theta: 1.0
-      min_speed_xy: 0.0
-      max_speed_xy: 1.5 #PAPER-PARAMS
-      min_speed_theta: 0.0
-      # Add high threshold velocity for turtlebot 3 issue.
-      # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 2.5 #PAPER-PARAMS
-      acc_lim_y: 0.0
-      acc_lim_theta: 3.2 #PAPER-PARAMS
-      decel_lim_x: -2.5
-      decel_lim_y: 0.0
-      decel_lim_theta: -3.2
-      vx_samples: 24
-      vy_samples: 4
-      vtheta_samples: 40
-      sim_time: 1.2
-      linear_granularity: 0.025
-      angular_granularity: 0.02
-      transform_tolerance: 0.2
-      xy_goal_tolerance: 0.25
-      trans_stopped_velocity: 0.05
-      short_circuit_trajectory_evaluation: True
-      stateful: True
-      critics: ["Oscillation", "BaseObstacle", "PathAlign", "PathDist", "GoalDist", "ObstacleFootprint"]
-      BaseObstacle.scale: 2.0
-      PathAlign.scale: 90.0
-      PathAlign.forward_point_distance: 0.05
-      PathDist.scale: 384.0
-      GoalDist.scale: 0.5
-      ObstacleFootprint.scale: 1.0
-
+      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+      # ---- experimental axis: kinematic limits (vary across the 3 settings) ----
+      max_linear_vel: 1.0              #PAPER-PARAMS (fixed across all settings)
+      min_linear_vel: 0.0              # no reverse commands (allow_reversing: false)
+      max_angular_vel: 3.0             #PAPER-PARAMS
+      min_angular_vel: -3.0            #PAPER-PARAMS
+      max_linear_accel: 2.5           #PAPER-PARAMS
+      max_linear_decel: -2.5          #PAPER-PARAMS
+      max_angular_accel: 3.2          #PAPER-PARAMS
+      max_angular_decel: -3.2         #PAPER-PARAMS
+      use_dynamic_window: true         # REQUIRED: kinematic limits are enforced only in DWPP mode
+      rotate_to_heading_angular_vel: 1.8  #PAPER-PARAMS (kept <= max_angular_vel)
+      # ---- frozen parameters (identical across all settings) ----
+      lookahead_dist: 0.6
+      min_lookahead_dist: 0.3
+      max_lookahead_dist: 0.9
+      lookahead_time: 1.5
+      use_velocity_scaled_lookahead_dist: false
+      use_fixed_curvature_lookahead: false
+      curvature_lookahead_dist: 0.25
+      min_approach_linear_velocity: 0.05
+      approach_velocity_scaling_dist: 0.6
+      use_collision_detection: true
+      max_allowed_time_to_collision_up_to_carrot: 1.0
+      use_regulated_linear_velocity_scaling: true
+      regulated_linear_scaling_min_radius: 0.9
+      regulated_linear_scaling_min_speed: 0.25
+      use_cost_regulated_linear_velocity_scaling: false
+      cost_scaling_dist: 0.3
+      cost_scaling_gain: 1.0
+      use_rotate_to_heading: true
+      rotate_to_heading_min_angle: 0.785
+      allow_reversing: false
+      min_distance_to_obstacle: 0.0
+      allow_obstacle_checking_beyond_goal: false
 
 local_costmap:
   local_costmap:
@@ -370,12 +363,14 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [1.2, 0.0, 1.0] #PAPER-PARAMS
-    min_velocity: [-1.2, 0.0, -1.0]
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
+    # NOTE: limits deliberately set ABOVE the most aggressive controller setting,
+    # so the smoother is never the binding constraint of the experiment.
+    # Identical across all three settings.
+    max_velocity: [1.1, 0.0, 3.3]
+    min_velocity: [-1.1, 0.0, -3.3]
+    max_accel: [3.0, 0.0, 4.0]
+    max_decel: [-3.0, 0.0, -4.0]
     odom_topic: "/odometry/filtered"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
-
