@@ -1,6 +1,6 @@
 # Report — Progettazione delle configurazioni RPP per la campagna su paved (v_max = 1.0 m/s)
 
-**Contesto.** Campagna sperimentale sul path-following con Regulated Pure Pursuit (RPP) su MiviaRover, traiettorie circular (r = 1.0 m) e stadium (lunghezza 4 m, raggi di raccordo 0.5 m). L'asse sperimentale è costituito dai limiti cinematici del controller — velocità angolare e accelerazioni lineari e angolari — a velocità lineare massima fissata a 1.0 m/s. I tre file generati (`exp_rpp_setting_spinta.yaml`, `exp_rpp_setting_intermedia.yaml`, `exp_rpp_setting_minima.yaml`) derivano dal file di riferimento della campagna DWB (`exp_settingA.yaml`) e ne differiscono esclusivamente nelle sezioni `controller_server` (plugin FollowPath) e `velocity_smoother`; tutto il resto — AMCL, behavior tree, costmap, planner, behavior server — è identico byte per byte al riferimento, così che ogni differenza misurata sia attribuibile ai soli parametri sotto esame.
+**Contesto.** Campagna sperimentale sul path-following con Regulated Pure Pursuit (RPP) su MiviaRover, traiettorie circular (r = 1.0 m) e stadium (rettilinei da 3 m, raggi di raccordo 0.5 m; i 4 m indicati in prima stesura sono l'ingombro longitudinale della figura, 3 + 2·0.5). L'asse sperimentale è costituito dai limiti cinematici del controller — velocità angolare e accelerazioni lineari e angolari — a velocità lineare massima fissata a 1.0 m/s. I tre file generati (`exp_rpp_setting_spinta.yaml`, `exp_rpp_setting_intermedia.yaml`, `exp_rpp_setting_minima.yaml`) derivano dal file di riferimento della campagna DWB (`exp_settingA.yaml`) e ne differiscono esclusivamente nelle sezioni `controller_server` (plugin FollowPath) e `velocity_smoother`; tutto il resto — AMCL, behavior tree, costmap, planner, behavior server — è identico byte per byte al riferimento, così che ogni differenza misurata sia attribuibile ai soli parametri sotto esame.
 
 ## 1. Sostituzione del controller: da DWB a RPP in modalità Dynamic Window
 
@@ -32,13 +32,13 @@ Il rovescio della medaglia è che il limite di 3.0 rad/s non è onorabile dalla 
 
 Il requisito è che ogni setting consenta di raggiungere v_max su entrambe le traiettorie. Sul cerchio il vincolo è banale; è lo stadium a dettare i floor, e l'innalzamento di v_max li innalza tutti — un effetto da tenere presente perché comprime lo spazio esplorabile.
 
-**Accelerazione lineare.** Con lunghezza totale 4 m e raccordi r = 0.5, i semicerchi occupano π ≈ 3.14 m e restano ~0.43 m per ciascun rettilineo. Lì il robot deve accelerare da 0.556 a 1.0 m/s e ridecelerare a 0.556 prima del raccordo successivo: (v_max² − v_curva²)/a ≤ 0.43 dà a ≥ (1.0 − 0.309)/0.43 ≈ **1.61 m/s²**. Si noti il salto rispetto al caso v_max = 0.8 (floor 1.04): a parità di rettilineo, il floor cresce quadraticamente con la velocità da raggiungere. Al floor esatto il profilo è triangolare e v_max viene toccata per un solo istante.
+**Accelerazione lineare.** *(Corretto: in prima stesura i 4 m erano stati interpretati come lunghezza totale del path, ricavando rettilinei da ~0.43 m; in realtà sono l'ingombro longitudinale e i rettilinei sono lunghi 3 m ciascuno.)* Sul rettilineo il robot deve accelerare da 0.556 a 1.0 m/s e ridecelerare a 0.556 prima del raccordo successivo: (v_max² − v_curva²)/a ≤ 3.0 dà a ≥ (1.0 − 0.309)/3.0 ≈ **0.23 m/s²**. Il vincolo di raggiungibilità di v_max è quindi largamente non stringente e lascia un lungo plateau a velocità di crociera. Il vincolo pratico più stretto diventa la frenata d'ingresso curva: la curvature regulation riduce v da 1.0 a 0.556 nell'arco del preavviso di lookahead (~0.9 m a crociera), richiedendo una decelerazione ≥ (1.0 − 0.309)/(2·0.9) ≈ **0.38 m/s²** per non entrare nel raccordo in sovravelocità.
 
 **Velocità angolare.** La domanda nominale peggiore è all'angolo: ω = 0.556/0.5 ≈ 1.11 rad/s. Questo è il floor stretto di compatibilità; il setting Minima è posto a 1.4 rad/s (+25%) per non azzerare del tutto l'autorità di correzione agli angoli, che al floor esatto renderebbe il tracking marginale per costruzione.
 
 **Accelerazione angolare.** La transizione rettilineo→semicerchio richiede di costruire ω ≈ 1.11 rad/s entro il preavviso dato dal lookahead (~L/v = 0.6/1.0 = 0.6 s a crociera): α ≥ 1.11/0.6 ≈ **1.85 rad/s²**.
 
-**Conseguenza sullo span sperimentale.** Con il floor lineare a 1.61 e il tetto della Spinta a 2.5 (valore ereditato dalla campagna DWB), lo span esplorabile sull'asse dell'accelerazione lineare si riduce a ~1.5×, contro il ~2× disponibile a v_max = 0.8. È il prezzo intrinseco della velocità più alta sui rettilinei corti dello stadium: se in campo le tre configurazioni risultassero indistinguibili su quest'asse, la spiegazione più probabile è la compressione dello span, non l'assenza dell'effetto — sull'asse angolare, dove lo span resta >2×, la risoluzione è invece piena.
+**Conseguenza sullo span sperimentale.** Con la geometria corretta il floor scende da 1.61 a 0.23 m/s² e la compressione dello span paventata in prima stesura non esiste: tra il floor pratico di frenata (~0.4) e il tetto della Spinta (2.5) lo spazio esplorabile sull'asse dell'accelerazione lineare supera 6×. I valori correnti di Minima (1.7) e Intermedia (2.0), dimensionati sul floor errato, risultano quindi inutilmente alti e ravvicinati alla Spinta (span ~1.5×): l'asse può essere riaperto verso il basso senza violare alcun vincolo di raggiungibilità.
 
 ## 5. I tre setting
 
@@ -46,7 +46,7 @@ Il requisito è che ogni setting consenta di raggiungere v_max su entrambe le tr
 |---|---|---|---|---|
 | `max_linear_vel` | 1.0 | 1.0 | 1.0 | — (fissa) |
 | `max_angular_vel` / `min` | ±3.0 | ±2.0 | ±1.4 | 1.11 rad/s (nominale angolo) |
-| `max_linear_accel` / `decel` | ±2.5 | ±2.0 | ±1.7 | 1.61 m/s² |
+| `max_linear_accel` / `decel` | ±2.5 | ±2.0 | ±1.7 | 0.23 m/s² (rettilineo 3 m; ~0.38 per la frenata d'ingresso curva) |
 | `max_angular_accel` / `decel` | ±3.2 | ±2.5 | ±2.0 | 1.85 rad/s² |
 | `rotate_to_heading_angular_vel` | 1.8 | 1.4 | 1.0 | ≤ ω_max del setting |
 
@@ -59,4 +59,33 @@ Nel file di riferimento lo smoother imponeva `max_velocity: [1.2, 0.0, 1.0]` e a
 ## 7. Parametri congelati e infrastruttura invariata
 
 Tutti i parametri RPP non appartenenti all'asse sperimentale sono fissati ai valori dell'esempio ufficiale e identici nei tre file: lookahead fisso a 0.6 m (scalatura in velocità disattivata), curvature regulation attiva con `min_radius: 0.9` — che per la geometria dei path non scatta mai sul cerchio (r = 1.0 > 0.9) e scatta sempre agli angoli dello stadium (r = 0.5) — collision detection attiva, rotate-to-heading attivo con soglia a 45°, cost-regulated scaling disattivato (arena obstacle-free; si noti che il default upstream è attivo, la disattivazione va dichiarata). Progress checker (0.15 m / 60 s) e goal checker (`PositionGoalChecker`, tolleranza 0.25 m) sono ereditati invariati dal file della campagna DWB anziché dallo stub della documentazione (0.5 m / 10 s): i valori già validati in campo riducono il rischio di recovery spurie e mantengono identica la condizione di terminazione della missione. Nota ereditata dal riferimento: `use_sim_time: True` compare in tutte le sezioni; se non viene sovrascritto dal launch file, va portato a `False` prima delle run in campo.
+
+## 8. Addendum (2026-07-14) — Variante attuata: limiti nel velocity smoother
+
+**Esito della verifica di compatibilità (§1).** L'ispezione del sorgente `nav2_regulated_pure_pursuit_controller` sul branch `humble` ha confermato che la modalità Dynamic Window **non esiste** in Humble: `use_dynamic_window`, `max/min_angular_vel`, `max_linear_accel/decel` e `max_angular_decel` non sono dichiarati dal plugin e venivano silenziosamente ignorati (verificato anche via `ros2 param dump`). Inoltre `max_linear_vel` non esiste con quel nome: il parametro reale è `desired_linear_vel`, il cui default è 0.5 m/s — le prime run sono quindi avvenute di fatto a metà della velocità di progetto e con i limiti cinematici ai default, non ai valori dei setting. Come previsto dall'avvertenza del §1, il disegno è stato riportato sulla variante **limiti nel velocity smoother**: i tre file ora differiscono nel blocco `velocity_smoother` (valori della tabella §5, assi [x, y, θ]) e, nel controller, nei soli `rotate_to_heading_angular_vel` e `max_angular_accel` (gli unici parametri cinematici reali di Humble RPP, quest'ultimo attivo solo nella rotate-to-heading).
+
+**Il §6 è superato.** Lo smoother passa da vincolo dormiente a **punto di enforcement dell'asse sperimentale**. Poiché però lo smoother applica limiti a scatola per asse — e un taglio di sola ω a v invariata eseguirebbe una curvatura inferiore alla comandata, con deriva sistematica verso l'esterno — è stato attivato `scale_velocities: True`: alla saturazione di un asse gli altri vengono scalati proporzionalmente, preservando il rapporto v/ω e quindi la curvatura eseguita. Il limite di ω si manifesta così come rallentamento in curva anziché come abbandono del path, coerentemente con l'accoppiamento differenziale del §3. Gli episodi di saturazione restano osservabili confrontando `/cmd_vel_nav` (uscita RPP) con `/cmd_vel` (uscita smoother), analogo a valle della telemetria encoder dei §2–3.
+
+**Lookahead scalato in velocità.** Con `desired_linear_vel` ora realmente a 1.0 m/s, il lookahead fisso di 0.6 m (gain geometrico 2/L² ≈ 5.6 m⁻²) si è rivelato instabile a crociera (serpeggiamento sul rettilineo). Attivato `use_velocity_scaled_lookahead_dist: true` con `lookahead_time: 1.0` e clamp [0.3, 0.9]: a crociera L satura a 0.9 m (gain dimezzato, 2.5 m⁻²), agli angoli dello stadium (v ≈ 0.556 dopo la regulation) L ≈ 0.56 m, praticamente identico allo 0.6 fisso del disegno originale — la geometria in curva è preservata. Il preavviso alla transizione rettilineo→raccordo passa da 0.6 a 0.9 s, e il floor di accelerazione angolare del §4 scende da 1.85 a 1.11/0.9 ≈ **1.23 rad/s²**: il margine della Minima (2.0) sale dal 8% al 63%. Il floor di ω (1.11) resta invariato e rispettato; quello lineare è stato ricalcolato con la geometria corretta dei rettilinei da 3 m (§4).
+
+**Differenza residua rispetto a DWPP.** RPP continua a generare ω = v·κ senza conoscere i limiti; l'ammissibilità cinematica è garantita a valle. Con `scale_velocities: True` il comando eseguito giace comunque sulla curvatura comandata, quindi la semantica sperimentale (limiti che modulano il profilo di velocità, non la geometria) è equivalente a quella DWPP per il profilo nominale delle due traiettorie.
+
+## 9. Addendum (2026-07-14) — Riapertura dell'asse di accelerazione lineare e decelerazione libera
+
+Due evidenze convergono su una revisione dell'asse lineare: in campo le accelerazioni correnti (1.7/2.0/2.5) si sono rivelate troppo aggressive per il controllore, e la correzione geometrica del §4 (rettilinei da 3 m, non 0.43) ha dissolto il floor di 1.61 m/s² che le aveva dettate. Il raggiungimento di v_max su entrambe le traiettorie resta un requisito dichiarato della campagna, ma con il floor vero (0.23 m/s²) esso non vincola più il basso dell'asse in modo significativo.
+
+**Nuovo asse di accelerazione lineare: 0.8 / 1.4 / 2.5 m/s².** La Minima è fissata a 0.8 come baseline di progetto: le rampe 0.556→1.0→0.556 occupano 0.43 m ciascuna e lasciano ~2.1 m di plateau a v_max sul rettilineo da 3 m — il requisito è soddisfatto con margine, non solo toccato. La Spinta conserva il tetto della campagna DWB (2.5, plateau ~2.7 m). L'Intermedia è la media geometrica √(0.8·2.5) ≈ 1.4, in applicazione del criterio del punto medio geometrico del §5 (rapporto ~1.77× tra setting adiacenti). Lo span torna a ~3.1×, recuperando la risoluzione sperimentale che il floor errato aveva compresso a 1.5×.
+
+**Decelerazione deliberatamente non cappata.** I limiti di decelerazione (assi x e θ dello smoother) sono portati a −10 (m/s², rad/s²), valore mai raggiungibile dai comandi: la frenata non è oggetto di studio, e capparla avrebbe due soli effetti, entrambi indesiderati — ritardare la frenata d'ingresso curva (requisito ≥ 0.38 m/s², §4) e aggiungere lag nel rilascio di ω all'uscita dei raccordi. Il valore è identico nei tre setting, quindi non introduce confondimenti; gli assi sperimentali diventano di sola accelerazione (build-up di v e di ω), e le metà "decel" della tabella §5 sono superate. Le accelerazioni angolari restano quelle della tabella (2.0 / 2.5 / 3.2 rad/s²).
+
+**Tabella operativa dei tre setting (sostituisce §5 per i valori, enforcement nel velocity smoother):**
+
+| Parametro (smoother, assi [x, y, θ]) | Spinta | Intermedia | Minima |
+|---|---|---|---|
+| `max_velocity` | [1.0, 0, 3.0] | [1.0, 0, 2.0] | [1.0, 0, 1.4] |
+| `min_velocity` | [0.0, 0, −3.0] | [0.0, 0, −2.0] | [0.0, 0, −1.4] |
+| `max_accel` | [2.5, 0, 3.2] | [1.4, 0, 2.5] | [0.8, 0, 2.0] |
+| `max_decel` | [−10, 0, −10] | [−10, 0, −10] | [−10, 0, −10] |
+| `rotate_to_heading_angular_vel` (RPP) | 1.8 | 1.4 | 1.0 |
+| `max_angular_accel` (RPP, solo rotate-to-heading) | 3.2 | 2.5 | 2.0 |
 

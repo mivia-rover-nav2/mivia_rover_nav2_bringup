@@ -141,23 +141,16 @@ controller_server:
       desired_linear_vel: 1.0          #PAPER-PARAMS (fixed across all settings)
       max_angular_accel: 2.5           #PAPER-PARAMS (only used by rotate-to-heading)
       rotate_to_heading_angular_vel: 1.4  #PAPER-PARAMS
-      # NOTE: Humble RPP has NO dynamic-window mode. The parameters below are NOT
-      # declared by the plugin (verified in navigation2@humble) and were silently
-      # ignored. Kept commented as a record of the intended limits; they are
-      # enforced by the velocity_smoother (see velocity_smoother section).
-      # min_linear_vel: 0.0
-      # max_angular_vel: 2.0
-      # min_angular_vel: -2.0
-      # max_linear_accel: 2.0
-      # max_linear_decel: -2.0
-      # max_angular_decel: -2.5
-      # use_dynamic_window: true
+      # NOTE: Humble RPP has NO dynamic-window mode (no use_dynamic_window,
+      # max/min_angular_vel, max_linear_accel/decel, max_angular_decel).
+      # The kinematic limits of this setting live in the velocity_smoother
+      # section below, which is the enforcement point of the experimental axis.
       # ---- frozen parameters (identical across all settings) ----
-      lookahead_dist: 0.6
-      min_lookahead_dist: 0.3
-      max_lookahead_dist: 0.9
-      lookahead_time: 1.5
-      use_velocity_scaled_lookahead_dist: false
+      lookahead_dist: 0.6                        # fallback only (velocity scaling active)
+      min_lookahead_dist: 0.3                    #PAPER-PARAMS (frozen)
+      max_lookahead_dist: 0.9                    #PAPER-PARAMS (frozen)
+      lookahead_time: 1.0                        #PAPER-PARAMS (frozen; L = v*t: 0.9 m at cruise, ~0.56 m at stadium corners)
+      use_velocity_scaled_lookahead_dist: true   #PAPER-PARAMS (frozen; needed for stability at v_max = 1.0 m/s)
       # use_fixed_curvature_lookahead / curvature_lookahead_dist: not available in Humble RPP
       min_approach_linear_velocity: 0.05
       approach_velocity_scaling_dist: 0.6
@@ -363,15 +356,15 @@ velocity_smoother:
   ros__parameters:
     use_sim_time: True
     smoothing_frequency: 20.0
-    scale_velocities: False
-    feedback: "OPEN_LOOP"
+    scale_velocities: True           #PAPER-PARAMS (frozen; keeps v/omega ratio when clipping so executed curvature = commanded)
+    feedback: "CLOSED_LOOP"
     # NOTE: Humble RPP cannot enforce kinematic limits while tracking the path,
     # so the velocity_smoother is the enforcement point of the experimental
     # kinematic limits (they vary across the 3 settings). Axes: [x, y, theta].
     max_velocity: [1.0, 0.0, 2.0]    #PAPER-PARAMS - Setting INTERMEDIA
     min_velocity: [0.0, 0.0, -2.0]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
-    max_accel: [2.0, 0.0, 2.5]       #PAPER-PARAMS
-    max_decel: [-2.0, 0.0, -2.5]     #PAPER-PARAMS
+    max_accel: [1.4, 0.0, 2.5]       #PAPER-PARAMS (linear accel axis: 0.8 / 1.4 / 2.5; 1.4 = geometric mean of 0.8 and 2.5)
+    max_decel: [-10.0, 0.0, -10.0]   #PAPER-PARAMS (frozen; deceleration deliberately uncapped, identical in all settings)
     odom_topic: "/odometry/filtered"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
