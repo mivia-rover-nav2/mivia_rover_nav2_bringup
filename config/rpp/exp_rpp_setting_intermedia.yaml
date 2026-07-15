@@ -148,8 +148,8 @@ controller_server:
       # ---- frozen parameters (identical across all settings) ----
       lookahead_dist: 0.6                        # fallback only (velocity scaling active)
       min_lookahead_dist: 0.3                    #PAPER-PARAMS (frozen)
-      max_lookahead_dist: 0.9                    #PAPER-PARAMS (frozen)
-      lookahead_time: 1.0                        #PAPER-PARAMS (frozen; L = v*t: 0.9 m at cruise, ~0.56 m at stadium corners)
+      max_lookahead_dist: 0.7                    #PAPER-PARAMS (frozen; caps L at cruise to limit corner-entry cutting)
+      lookahead_time: 1.0                        #PAPER-PARAMS (frozen; L = v*t: 0.7 m at cruise (capped), ~0.56 m at stadium corners)
       use_velocity_scaled_lookahead_dist: true   #PAPER-PARAMS (frozen; needed for stability at v_max = 1.0 m/s)
       # use_fixed_curvature_lookahead / curvature_lookahead_dist: not available in Humble RPP
       min_approach_linear_velocity: 0.05
