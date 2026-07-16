@@ -139,7 +139,11 @@ controller_server:
       max_lookahead_dist: 0.9
       lookahead_time: 1.5
       rotate_to_heading_angular_vel: 1.8
-      transform_tolerance: 0.1
+      # Raised from 0.1s: the map->odom TF from localization jitters with gaps up
+      # to ~0.1s (worse when the ZED camera stream drops), which made RPP throw
+      # "Unable to transform robot pose into global plan's frame" and abort the
+      # FollowPath goal with status 6. 0.5s covers the observed TF jitter.
+      transform_tolerance: 0.5
       use_velocity_scaled_lookahead_dist: false
       min_approach_linear_velocity: 0.05
       approach_velocity_scaling_dist: 1.0
