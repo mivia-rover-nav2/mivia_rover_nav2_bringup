@@ -369,7 +369,7 @@ velocity_smoother:
     use_sim_time: True
     smoothing_frequency: 20.0
     scale_velocities: False
-    feedback: "CLOSED_LOOP"
+    feedback: "OPEN_LOOP"
     max_velocity: [1.2, 0.0, 1.0] #PAPER-PARAMS
     min_velocity: [-1.2, 0.0, -1.0]
     max_accel: [2.5, 0.0, 3.2]

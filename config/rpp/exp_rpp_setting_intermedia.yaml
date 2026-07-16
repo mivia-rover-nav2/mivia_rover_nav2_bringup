@@ -352,7 +352,7 @@ velocity_smoother:
     use_sim_time: False
     smoothing_frequency: 20.0
     scale_velocities: True           #PAPER-PARAMS (frozen; keeps v/omega ratio when clipping so executed curvature = commanded)
-    feedback: "CLOSED_LOOP"
+    feedback: "OPEN_LOOP"
     # NOTE: Humble RPP cannot enforce kinematic limits while tracking the path,
     # so the velocity_smoother is the enforcement point of the experimental
     # kinematic limits (they vary across the 3 settings). Axes: [x, y, theta].
