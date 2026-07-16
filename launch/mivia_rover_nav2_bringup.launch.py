@@ -27,7 +27,7 @@ def generate_launch_description() -> LaunchDescription:
         this_share,
         "config",
         "rpp",
-        "exp_rpp_setting_spinta.yaml",
+        "exp_rpp_setting_intermedia.yaml",
     )
 
     # ------------------------------------------------------------------
