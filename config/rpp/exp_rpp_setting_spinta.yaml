@@ -140,7 +140,7 @@ controller_server:
       min_lookahead_dist: 0.3
       max_lookahead_dist: 0.9
       lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 2.7  #PAPER-PARAMS (0.9 * setting omega_max, ratio inherited from validated intermedia 1.8/2.0)
+      rotate_to_heading_angular_vel: 3.0  #PAPER-PARAMS (0.9 * setting omega_max = 3.06 rounded down, ratio inherited from validated intermedia 1.8/2.0)
       # Raised from 0.1s: the map->odom TF from localization jitters with gaps up
       # to ~0.1s (worse when the ZED camera stream drops), which made RPP throw
       # "Unable to transform robot pose into global plan's frame" and abort the
@@ -157,7 +157,7 @@ controller_server:
       regulated_linear_scaling_min_speed: 0.25
       use_rotate_to_heading: true
       rotate_to_heading_min_angle: 0.785
-      max_angular_accel: 3.2           #PAPER-PARAMS (frozen; rotate-to-heading only — effective ramp is the smoother theta accel axis 0.6/2.5/3.2)
+      max_angular_accel: 4.0           #PAPER-PARAMS (frozen; rotate-to-heading only — effective ramp is the smoother theta accel axis 0.5/2.5/4.0)
       max_robot_pose_search_dist: 10.0
       use_interpolation: false
       cost_scaling_dist: 0.3
@@ -358,9 +358,9 @@ velocity_smoother:
     # NOTE: Humble RPP cannot enforce kinematic limits while tracking the path,
     # so the velocity_smoother is the enforcement point of the experimental
     # kinematic limits (they vary across the 3 settings). Axes: [x, y, theta].
-    max_velocity: [0.5, 0.0, 3.0]    #PAPER-PARAMS - Setting SPINTA (omega axis: 0.7 / 2.0 / 3.0; x = 0.5 frozen, v_max cap identical in all settings)
-    min_velocity: [0.0, 0.0, -3.0]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
-    max_accel: [2.5, 0.0, 3.2]       #PAPER-PARAMS (linear accel axis: 0.4 / 1.4 / 2.5, 2.5 = DWB-campaign ceiling; angular accel axis: 0.6 / 2.5 / 3.2)
+    max_velocity: [0.5, 0.0, 3.4]    #PAPER-PARAMS - Setting SPINTA (omega axis: 0.6 / 2.0 / 3.4; x = 0.5 frozen, v_max cap identical in all settings)
+    min_velocity: [0.0, 0.0, -3.4]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
+    max_accel: [3.0, 0.0, 4.0]       #PAPER-PARAMS (linear accel axis: 0.2 / 1.4 / 3.0, beyond the 2.5/3.2 DWB ceilings: kinetic regime halved at v_max 0.5; angular accel axis: 0.5 / 2.5 / 4.0)
     max_decel: [-10.0, 0.0, -10.0]   #PAPER-PARAMS (frozen; deceleration deliberately uncapped, identical in all settings)
     odom_topic: "/odometry/filtered"
     odom_duration: 0.1
