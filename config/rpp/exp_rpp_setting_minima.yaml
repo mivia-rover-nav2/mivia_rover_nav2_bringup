@@ -358,8 +358,8 @@ velocity_smoother:
     # NOTE: Humble RPP cannot enforce kinematic limits while tracking the path,
     # so the velocity_smoother is the enforcement point of the experimental
     # kinematic limits (they vary across the 3 settings). Axes: [x, y, theta].
-    max_velocity: [0.5, 0.0, 0.6]    #PAPER-PARAMS - Setting MINIMA (omega axis: 0.6 / 2.0 / 3.4; x = 0.5 frozen, v_max cap identical in all settings)
-    min_velocity: [0.0, 0.0, -0.6]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
+    max_velocity: [0.5, 0.0, 2.0]    #PAPER-PARAMS - Setting MINIMA (omega axis: 0.6 / 2.0 / 3.4; x = 0.5 frozen, v_max cap identical in all settings)
+    min_velocity: [0.0, 0.0, -2.0]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
     max_accel: [0.2, 0.0, 0.5]       #PAPER-PARAMS (linear accel axis: 0.2 / 1.4 / 3.0; angular accel axis: 0.5 / 2.5 / 4.0)
     max_decel: [-10.0, 0.0, -10.0]   #PAPER-PARAMS (frozen; deceleration deliberately uncapped, identical in all settings)
     odom_topic: "/odometry/filtered"
