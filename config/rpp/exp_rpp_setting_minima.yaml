@@ -1,6 +1,6 @@
 amcl:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     alpha1: 0.2
     alpha2: 0.2
     alpha3: 0.2
@@ -41,7 +41,7 @@ amcl:
 
 bt_navigator:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     global_frame: map
     robot_base_frame: base_link
     odom_topic: /odometry/filtered
@@ -103,69 +103,66 @@ bt_navigator:
 
 bt_navigator_navigate_through_poses_rclcpp_node:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
 
 bt_navigator_navigate_to_pose_rclcpp_node:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
 
 controller_server:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
-    failure_tolerance: 2.0
     odom_topic: "/odometry/filtered"
     progress_checker_plugin: "progress_checker"
-    goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
+    goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
 
-    # Progress checker parameters (unchanged w.r.t. DWB campaign)
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.15
-      movement_time_allowance: 60.0
-
-    # Goal checker parameters (unchanged w.r.t. DWB campaign)
-    general_goal_checker:
-      stateful: True
-      plugin: "nav2_controller::PositionGoalChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-
+      yaw_goal_tolerance: 0.25
+      stateful: True
     # RPP parameters - Setting MINIMA (conservative) #PAPER-PARAMS
+    # Derived from the field-validated INTERMEDIA config: identical except the
+    # experimental kinematic axis (velocity_smoother limits + rotate_to_heading_angular_vel).
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      # ---- experimental axis: kinematic limits (vary across the 3 settings) ----
-      desired_linear_vel: 1.0          #PAPER-PARAMS (fixed across all settings)
-      max_angular_accel: 2.0           #PAPER-PARAMS (only used by rotate-to-heading)
-      rotate_to_heading_angular_vel: 1.0  #PAPER-PARAMS
-      # NOTE: Humble RPP has NO dynamic-window mode (no use_dynamic_window,
-      # max/min_angular_vel, max_linear_accel/decel, max_angular_decel).
-      # The kinematic limits of this setting live in the velocity_smoother
-      # section below, which is the enforcement point of the experimental axis.
-      # ---- frozen parameters (identical across all settings) ----
-      lookahead_dist: 0.6                        # fallback only (velocity scaling active)
-      min_lookahead_dist: 0.3                    #PAPER-PARAMS (frozen)
-      max_lookahead_dist: 0.7                    #PAPER-PARAMS (frozen; caps L at cruise to limit corner-entry cutting)
-      lookahead_time: 1.0                        #PAPER-PARAMS (frozen; L = v*t: 0.7 m at cruise (capped), ~0.56 m at stadium corners)
-      use_velocity_scaled_lookahead_dist: true   #PAPER-PARAMS (frozen; needed for stability at v_max = 1.0 m/s)
-      # use_fixed_curvature_lookahead / curvature_lookahead_dist: not available in Humble RPP
+      desired_linear_vel: 0.5          #PAPER-PARAMS (frozen; v_max = 0.5 m/s identical in all settings, field-validated cap)
+      lookahead_dist: 0.6              #PAPER-PARAMS (frozen; fixed lookahead — velocity scaling disabled, stable at 0.5 m/s cruise)
+      min_lookahead_dist: 0.3
+      max_lookahead_dist: 0.9
+      lookahead_time: 1.5
+      rotate_to_heading_angular_vel: 0.6  #PAPER-PARAMS (0.9 * setting omega_max, ratio inherited from validated intermedia 1.8/2.0)
+      # Raised from 0.1s: the map->odom TF from localization jitters with gaps up
+      # to ~0.1s (worse when the ZED camera stream drops), which made RPP throw
+      # "Unable to transform robot pose into global plan's frame" and abort the
+      # FollowPath goal with status 6. 0.5s covers the observed TF jitter.
+      transform_tolerance: 0.5
+      use_velocity_scaled_lookahead_dist: false   #PAPER-PARAMS (frozen; scaling was needed only at v_max = 1.0, see report §10)
       min_approach_linear_velocity: 0.05
-      approach_velocity_scaling_dist: 0.6
+      approach_velocity_scaling_dist: 1.0
       use_collision_detection: true
       max_allowed_time_to_collision_up_to_carrot: 1.0
       use_regulated_linear_velocity_scaling: true
+      use_cost_regulated_linear_velocity_scaling: false
       regulated_linear_scaling_min_radius: 0.9
       regulated_linear_scaling_min_speed: 0.25
-      use_cost_regulated_linear_velocity_scaling: false
-      cost_scaling_dist: 0.3
-      cost_scaling_gain: 1.0
       use_rotate_to_heading: true
       rotate_to_heading_min_angle: 0.785
-      allow_reversing: false
-      # min_distance_to_obstacle / allow_obstacle_checking_beyond_goal: not available in Humble RPP
+      max_angular_accel: 3.2           #PAPER-PARAMS (frozen; rotate-to-heading only — effective ramp is the smoother theta accel axis 0.6/2.5/3.2)
+      max_robot_pose_search_dist: 10.0
+      use_interpolation: false
+      cost_scaling_dist: 0.3
+      cost_scaling_gain: 1.0
+      inflation_cost_scaling_factor: 3.0
 
 local_costmap:
   local_costmap:
@@ -174,7 +171,7 @@ local_costmap:
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_link
-      use_sim_time: True
+      use_sim_time: False
       rolling_window: true
       width: 3
       height: 3
@@ -248,7 +245,7 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      use_sim_time: True
+      use_sim_time: False
       robot_radius: 0.22
       resolution: 0.05
       track_unknown_space: true
@@ -278,14 +275,14 @@ global_costmap:
 
 map_server:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     # Overridden in launch by the "map" launch configuration or provided default value.
     # To use in yaml, remove the default "map" value in the tb3_simulation_launch.py file & provide full path to map below.
     yaml_filename: ""
 
 map_saver:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     save_map_timeout: 5.0
     free_thresh_default: 0.25
     occupied_thresh_default: 0.65
@@ -294,7 +291,7 @@ map_saver:
 planner_server:
   ros__parameters:
     expected_planner_frequency: 20.0
-    use_sim_time: True
+    use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
@@ -304,7 +301,7 @@ planner_server:
 
 smoother_server:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     smoother_plugins: ["simple_smoother"]
     simple_smoother:
       plugin: "nav2_smoother::SimpleSmoother"
@@ -331,7 +328,7 @@ behavior_server:
     global_frame: odom
     robot_base_frame: base_link
     transform_tolerance: 0.1
-    use_sim_time: true
+    use_sim_time: False
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
     min_rotational_vel: 0.4
@@ -339,11 +336,11 @@ behavior_server:
 
 robot_state_publisher:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
 
 waypoint_follower:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     loop_rate: 20
     stop_on_failure: false
     waypoint_task_executor_plugin: "wait_at_waypoint"
@@ -354,16 +351,16 @@ waypoint_follower:
 
 velocity_smoother:
   ros__parameters:
-    use_sim_time: True
+    use_sim_time: False
     smoothing_frequency: 20.0
     scale_velocities: True           #PAPER-PARAMS (frozen; keeps v/omega ratio when clipping so executed curvature = commanded)
     feedback: "OPEN_LOOP"
     # NOTE: Humble RPP cannot enforce kinematic limits while tracking the path,
     # so the velocity_smoother is the enforcement point of the experimental
     # kinematic limits (they vary across the 3 settings). Axes: [x, y, theta].
-    max_velocity: [1.0, 0.0, 1.4]    #PAPER-PARAMS - Setting MINIMA
-    min_velocity: [0.0, 0.0, -1.4]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
-    max_accel: [0.8, 0.0, 2.0]       #PAPER-PARAMS (linear accel axis: 0.8 / 1.4 / 2.5)
+    max_velocity: [0.5, 0.0, 0.7]    #PAPER-PARAMS - Setting MINIMA (omega axis: 0.7 / 2.0 / 3.0; x = 0.5 frozen, v_max cap identical in all settings)
+    min_velocity: [0.0, 0.0, -0.7]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
+    max_accel: [0.4, 0.0, 0.6]       #PAPER-PARAMS (linear accel axis: 0.4 / 1.4 / 2.5; angular accel axis: 0.6 / 2.5 / 3.2)
     max_decel: [-10.0, 0.0, -10.0]   #PAPER-PARAMS (frozen; deceleration deliberately uncapped, identical in all settings)
     odom_topic: "/odometry/filtered"
     odom_duration: 0.1
