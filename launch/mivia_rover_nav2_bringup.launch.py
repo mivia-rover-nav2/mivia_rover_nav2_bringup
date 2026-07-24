@@ -26,8 +26,8 @@ def generate_launch_description() -> LaunchDescription:
     default_params_file = os.path.join(
         this_share,
         "config",
-        "rpp",
-        "exp_rpp_setting_spinta.yaml",
+        "dwb",
+        "exp_settingA.yaml",
     )
 
     # ------------------------------------------------------------------
