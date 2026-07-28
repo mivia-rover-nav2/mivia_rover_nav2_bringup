@@ -142,7 +142,6 @@ controller_server:
     # DWB parameters
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
-      #trajectory_generator_name: "dwb_plugins::LimitedAccelGenerator" # Da capire
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
