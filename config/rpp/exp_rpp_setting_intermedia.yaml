@@ -136,12 +136,12 @@ controller_server:
     # rotate_to_heading_angular_vel).
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.5          #PAPER-PARAMS (frozen; v_max = 0.5 m/s identical in all settings, field-validated cap)
+      desired_linear_vel: 0.8          #PAPER-PARAMS (v_max = 0.8 m/s, identical in all settings)
       lookahead_dist: 0.6              #PAPER-PARAMS (frozen; fixed lookahead — velocity scaling disabled, stable at 0.5 m/s cruise)
       min_lookahead_dist: 0.3
       max_lookahead_dist: 0.9
       lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 1.8  #PAPER-PARAMS (0.9 * setting omega_max; ratio 1.8/2.0 inherited by the other settings)
+      rotate_to_heading_angular_vel: 1.6  #PAPER-PARAMS (omega_max = 1.6 rad/s, identical in all settings)
       # Raised from 0.1s: the map->odom TF from localization jitters with gaps up
       # to ~0.1s (worse when the ZED camera stream drops), which made RPP throw
       # "Unable to transform robot pose into global plan's frame" and abort the
@@ -359,8 +359,8 @@ velocity_smoother:
     # NOTE: Humble RPP cannot enforce kinematic limits while tracking the path,
     # so the velocity_smoother is the enforcement point of the experimental
     # kinematic limits (they vary across the 3 settings). Axes: [x, y, theta].
-    max_velocity: [0.5, 0.0, 2.0]    #PAPER-PARAMS - Setting INTERMEDIA (omega axis: 0.7 / 2.0 / 3.0; x = 0.5 frozen, v_max cap identical in all settings)
-    min_velocity: [0.0, 0.0, -2.0]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
+    max_velocity: [0.8, 0.0, 1.6] #PAPER-PARAMS
+    min_velocity: [0.0, 0.0, -1.6]   #PAPER-PARAMS (linear min 0.0: no reverse, allow_reversing: false)
     max_accel: [1.4, 0.0, 2.5]       #PAPER-PARAMS (linear accel axis: 0.4 / 1.4 / 2.5; angular accel axis: 0.6 / 2.5 / 3.2)
     max_decel: [-10.0, 0.0, -10.0]   #PAPER-PARAMS (frozen; deceleration deliberately uncapped, identical in all settings)
     odom_topic: "/odometry/filtered"

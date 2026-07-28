@@ -147,7 +147,7 @@ controller_server:
       min_vel_y: 0.0
       max_vel_x: 0.8 #PAPER-PARAMS
       max_vel_y: 0.0
-      max_vel_theta: 1.0
+      max_vel_theta: 1.6 #PAPER-PARAMS
       min_speed_xy: 0.0
       max_speed_xy: 0.8 #PAPER-PARAMS
       min_speed_theta: 0.0
@@ -371,7 +371,7 @@ velocity_smoother:
     scale_velocities: False
     feedback: "OPEN_LOOP"
     max_velocity: [0.8, 0.0, 1.6] #PAPER-PARAMS
-    min_velocity: [-0.8, 0.0, -1.6]
+    min_velocity: [-0.8, 0.0, -1.6] #PAPER-PARAMS
     max_accel: [1.1, 0.0, 2.9] #PAPER-PARAMS (matches FollowPath acc_lim_x/acc_lim_theta)
     max_decel: [-2.5, 0.0, -2.9] #PAPER-PARAMS (matches FollowPath decel_lim_x/decel_lim_theta)
     odom_topic: "/odometry/filtered"
