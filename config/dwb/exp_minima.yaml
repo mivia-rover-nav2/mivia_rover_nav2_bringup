@@ -145,20 +145,20 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.8 #PAPER-PARAMS
+      max_vel_x: 0.6 #PAPER-PARAMS
       max_vel_y: 0.0
-      max_vel_theta: 0.81 #TUNED
+      max_vel_theta: 1.0
       min_speed_xy: 0.0
-      max_speed_xy: 0.8 #PAPER-PARAMS
+      max_speed_xy: 0.6 #PAPER-PARAMS
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 0.2 #TUNED
+      acc_lim_x: 2.5 #PAPER-PARAMS
       acc_lim_y: 0.0
-      acc_lim_theta: 2.0 #TUNED
-      decel_lim_x: -1.0 #TUNED
+      acc_lim_theta: 3.2 #PAPER-PARAMS
+      decel_lim_x: -2.5
       decel_lim_y: 0.0
-      decel_lim_theta: -2.0 #TUNED
+      decel_lim_theta: -3.2
       vx_samples: 24
       vy_samples: 4
       vtheta_samples: 40
@@ -172,7 +172,7 @@ controller_server:
       stateful: True
       critics: ["Oscillation", "BaseObstacle", "PathAlign", "PathDist", "GoalDist", "ObstacleFootprint"]
       BaseObstacle.scale: 2.0
-      PathAlign.scale: 90.0
+      PathAlign.scale: 48.0
       PathAlign.forward_point_distance: 0.05
       PathDist.scale: 384.0
       GoalDist.scale: 0.5
@@ -207,7 +207,7 @@ local_costmap:
         enabled: True
         observation_sources: patchworkpp_nonground
         patchworkpp_nonground:
-          topic: /patchworkpp/nongrounD # /perception/detected_objects/pointcloud
+          topic: /patchworkpp/nonground # /perception/detected_objects/pointcloud
           data_type: "PointCloud2"
           marking: true
           clearing: true
@@ -370,12 +370,11 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.8, 0.0, 1.6] #PAPER-PARAMS
-    min_velocity: [-0.8, 0.0, -1.6] #PAPER-PARAMS
-    max_accel: [0.5, 0.0, 2.6] #PAPER-PARAMS (matches FollowPath acc_lim_x/acc_lim_theta)
-    max_decel: [-2.5, 0.0, -2.6] #PAPER-PARAMS (matches FollowPath decel_lim_x/decel_lim_theta)
+    max_velocity: [1.2, 0.0, 1.0] #PAPER-PARAMS
+    min_velocity: [-1.2, 0.0, -1.0]
+    max_accel: [2.5, 0.0, 3.2]
+    max_decel: [-2.5, 0.0, -3.2]
     odom_topic: "/odometry/filtered"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0
-
