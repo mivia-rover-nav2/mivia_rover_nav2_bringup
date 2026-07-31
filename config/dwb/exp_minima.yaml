@@ -207,7 +207,7 @@ local_costmap:
         enabled: True
         observation_sources: patchworkpp_nonground
         patchworkpp_nonground:
-          topic: /patchworkpp/nonground # /perception/detected_objects/pointcloud
+          topic: /patchworkpp/nongrounD # /perception/detected_objects/pointcloud
           data_type: "PointCloud2"
           marking: true
           clearing: true
