@@ -370,8 +370,8 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [1.2, 0.0, 1.0] #PAPER-PARAMS
-    min_velocity: [-1.2, 0.0, -1.0]
+    max_velocity: [1.2, 0.0, 3.0] #PAPER-PARAMS
+    min_velocity: [-1.2, 0.0, -3.0]
     max_accel: [2.5, 0.0, 3.2]
     max_decel: [-2.5, 0.0, -3.2]
     odom_topic: "/odometry/filtered"
