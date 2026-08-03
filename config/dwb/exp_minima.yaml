@@ -172,7 +172,7 @@ controller_server:
       stateful: True
       critics: ["Oscillation", "BaseObstacle", "PathAlign", "PathDist", "GoalDist", "ObstacleFootprint"]
       BaseObstacle.scale: 2.0
-      PathAlign.scale: 48.0
+      PathAlign.scale: 90.0
       PathAlign.forward_point_distance: 0.05
       PathDist.scale: 384.0
       GoalDist.scale: 0.5
