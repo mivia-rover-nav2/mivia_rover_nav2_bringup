@@ -27,7 +27,7 @@ def generate_launch_description() -> LaunchDescription:
         this_share,
         "config",
         "dwb",
-        "exp_minima.yaml",
+        "exp_settingA.yaml",
     )
 
     # ------------------------------------------------------------------
